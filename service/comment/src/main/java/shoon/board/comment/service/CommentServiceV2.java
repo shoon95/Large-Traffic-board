@@ -3,9 +3,11 @@ package shoon.board.comment.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import shoon.board.comment.entity.ArticleCommentCount;
 import shoon.board.comment.entity.Comment;
 import shoon.board.comment.entity.CommentPath;
 import shoon.board.comment.entity.CommentV2;
+import shoon.board.comment.repository.ArticleCommentCountRepository;
 import shoon.board.comment.repository.CommentRepositoryV2;
 import shoon.board.comment.service.request.CommentCreateRequestV2;
 import shoon.board.comment.service.request.CommentPageResponse;
@@ -23,6 +25,7 @@ public class CommentServiceV2 {
 
     private final Snowflake snowflake = new Snowflake();
     private final CommentRepositoryV2 commentRepository;
+    private final ArticleCommentCountRepository articleCommentCountRepository;
 
     @Transactional
     public CommentResponse create(CommentCreateRequestV2 request) {
@@ -39,6 +42,13 @@ public class CommentServiceV2 {
                         )
                 )
         );
+
+        int result = articleCommentCountRepository.increase(request.getArticleId());
+        if (result == 0) {
+            articleCommentCountRepository.save(
+                    ArticleCommentCount.init(request.getArticleId(), 1L)
+            );
+        }
 
         return CommentResponse.from(comment);
     }
@@ -71,6 +81,8 @@ public class CommentServiceV2 {
                         delete(comment);
                     }
                 });
+
+
     }
 
     private boolean hasChildren(CommentV2 comment) {
@@ -81,6 +93,7 @@ public class CommentServiceV2 {
 
     private void delete(CommentV2 comment) {
         commentRepository.delete(comment);
+        articleCommentCountRepository.decrease(comment.getArticleId());
         if (!comment.isRoot()) {
             commentRepository.findByPath(comment.getCommentPath().getParentPath())
                     .filter(CommentV2::getDeleted)
@@ -104,6 +117,12 @@ public class CommentServiceV2 {
                 commentRepository.findAllInfiniteScroll(articleId, pageSize, lastPath);
 
         return comments.stream().map(CommentResponse::from).toList();
+    }
+
+    public Long count(Long articleId) {
+        return articleCommentCountRepository.findById(articleId)
+                .map(ArticleCommentCount::getCommentCount)
+                .orElse(0L);
     }
 
 }
