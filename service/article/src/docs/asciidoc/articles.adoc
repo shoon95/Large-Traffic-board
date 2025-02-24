@@ -1,0 +1,13 @@
+= SHOON Rest Docs _ Articles
+:doctype: book
+:icons: front
+:source-highlighter: highlighsjs
+:toc: left
+:toclevels: 1
+:snippets: build/generated-snippets
+
+[[get-article]]
+== get-article
+
+operation::get-article[]
+

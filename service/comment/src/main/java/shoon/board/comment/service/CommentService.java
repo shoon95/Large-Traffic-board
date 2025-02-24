@@ -11,7 +11,6 @@ import shoon.board.comment.service.response.CommentResponse;
 import shoon.board.common.snowflake.Snowflake;
 
 import java.util.List;
-import java.util.function.Predicate;
 
 import static java.util.function.Predicate.not;
 

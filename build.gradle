@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.4.2'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.asciidoctor.jvm.convert' version '3.3.2'
 }
 
 group = 'shoon'
@@ -12,14 +13,23 @@ allprojects {
         mavenCentral()
     }
 
+    ext {
+        set('snippetsDir', file("build/generated-snippets"))
+    }
+
     apply plugin: 'java'
     apply plugin: 'org.springframework.boot'
     apply plugin: 'io.spring.dependency-management'
     apply plugin: 'java-library'
+    apply plugin: 'org.asciidoctor.jvm.convert'
 
     java {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
+    }
+
+    configurations {
+        asciidoctorExt
     }
 
     dependencies {
@@ -32,13 +42,44 @@ allprojects {
         testAnnotationProcessor 'org.projectlombok:lombok'
 
         testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+        asciidoctorExt 'org.springframework.restdocs:spring-restdocs-asciidoctor'
+        testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
     }
 
     tasks.named('test') {
         useJUnitPlatform()
     }
 
+    test {
+        outputs.dir snippetsDir
+    }
+
+//    jar {
+//        enabled = false
+//    }
+
+    asciidoctor {
+        inputs.dir snippetsDir
+        configurations 'asciidoctorExt'
+        dependsOn test
+    }
+
+    asciidoctor.doFirst {
+        delete file('src/main/resources/static/docs')
+    }
+
+    task copyDocument(type: Copy) {
+        dependsOn asciidoctor
+        from file("build/docs/asciidoc")
+        into file("src/main/resources/static/docs")
+    }
+
+    build {
+        dependsOn copyDocument
+    }
 }
 
 

@@ -3,6 +3,9 @@ package shoon.board.view.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import shoon.board.common.event.EventType;
+import shoon.board.common.event.payload.ArticleViewedEventPayload;
+import shoon.board.common.outboxmessagerelay.OutboxEventPublisher;
 import shoon.board.view.entity.ArticleViewCount;
 import shoon.board.view.repository.ArticleViewCountBackUpRepository;
 
@@ -10,6 +13,7 @@ import shoon.board.view.repository.ArticleViewCountBackUpRepository;
 @RequiredArgsConstructor
 public class ArticleViewCountBackUpProcessor {
 
+    private final OutboxEventPublisher outboxEventPublisher;
     private final ArticleViewCountBackUpRepository articleViewCountBackUpRepository;
 
     @Transactional
@@ -21,5 +25,14 @@ public class ArticleViewCountBackUpProcessor {
                         () -> articleViewCountBackUpRepository.save(ArticleViewCount.init(articleId, viewCount))
                     );
         }
+
+        outboxEventPublisher.publish(
+                EventType.ARTICLE_VIEWED,
+                ArticleViewedEventPayload.builder()
+                        .articleId(articleId)
+                        .articleViewCount(viewCount)
+                        .build(),
+                articleId
+        );
     }
 }

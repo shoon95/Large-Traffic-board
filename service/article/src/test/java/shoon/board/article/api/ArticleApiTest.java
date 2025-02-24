@@ -3,6 +3,8 @@ package shoon.board.article.api;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
@@ -11,8 +13,10 @@ import shoon.board.article.service.response.ArticleResponse;
 
 import java.util.List;
 
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class ArticleApiTest {
 
+    @Autowired
     RestClient restClient = RestClient.create("http://localhost:9000");
 
     @Test

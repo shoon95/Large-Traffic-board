@@ -58,4 +58,6 @@ public class ArticleController {
     public Long count(@PathVariable Long boardId) {
         return articleService.count(boardId);
     }
+
+
 }

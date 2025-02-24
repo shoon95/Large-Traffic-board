@@ -3,6 +3,10 @@ package shoon.board.like.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import shoon.board.common.event.EventType;
+import shoon.board.common.event.payload.ArticleLikedEventPayload;
+import shoon.board.common.event.payload.ArticleUnlikedEventPayload;
+import shoon.board.common.outboxmessagerelay.OutboxEventPublisher;
 import shoon.board.common.snowflake.Snowflake;
 import shoon.board.like.entity.ArticleLike;
 import shoon.board.like.entity.ArticleLikeCount;
@@ -15,6 +19,7 @@ import shoon.board.like.service.response.ArticleLikeResponse;
 public class ArticleLikeService {
 
     private final Snowflake snowflake = new Snowflake();
+    private final OutboxEventPublisher outboxEventPublisher;
     private final ArticleLikeRepository articleLikeRepository;
     private final ArticleLikeCountRepository articleLikeCountRepository;
 
@@ -29,7 +34,7 @@ public class ArticleLikeService {
      */
     @Transactional
     public void likePessimisticLock1(Long articleId, Long userId) {
-       articleLikeRepository.save(
+        ArticleLike articleLike = articleLikeRepository.save(
                 ArticleLike.create(
                         snowflake.nextId(),
                         articleId,
@@ -45,6 +50,18 @@ public class ArticleLikeService {
                     ArticleLikeCount.init(articleId, 1L)
             );
         }
+
+        outboxEventPublisher.publish(
+                EventType.ARTICLE_LIKED,
+                ArticleLikedEventPayload.builder()
+                        .articleLikeId(articleLike.getArticleLikeId())
+                        .articleId(articleLike.getArticleId())
+                        .userId(articleLike.getUserId())
+                        .createdAt(articleLike.getCreatedAt())
+                        .articleLikeCount(count(articleLike.getArticleId()))
+                        .build(),
+                articleLike.getArticleId()
+        );
     }
 
     @Transactional
@@ -53,6 +70,17 @@ public class ArticleLikeService {
                 .ifPresent(entity -> {
                     articleLikeRepository.delete(entity);
                     articleLikeCountRepository.decrease(articleId);
+                    outboxEventPublisher.publish(
+                            EventType.ARTICLE_UNLIKED,
+                            ArticleUnlikedEventPayload.builder()
+                                    .articleLikeId(entity.getArticleLikeId())
+                                    .articleId(entity.getArticleId())
+                                    .userId(entity.getUserId())
+                                    .createdAt(entity.getCreatedAt())
+                                    .articleLikeCount(count(entity.getArticleId()))
+                                    .build(),
+                            entity.getArticleId()
+                    );
                 });
     }
 

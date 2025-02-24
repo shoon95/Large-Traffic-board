@@ -3,4 +3,6 @@ dependencies {
     implementation project(':common:snowflake')
     implementation project(':common:config')
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation project(':common:outbox-message-relay')
+    implementation project(':common:event')
 }
